@@ -71,6 +71,7 @@ export async function collectRoutes(options = {}) {
         kind: 'session',
         source: url,
         session,
+        pending: route.done === false ? 1 : 0,
         routes: [{
           time: timeOf(route.time),
           asked: typeof route.asked === 'string' ? route.asked : '',

@@ -23,12 +23,28 @@ function jsonResponse(value, status = 200) {
 }
 
 /**
- * Serve the same-origin read route that the client dock polls. The client half
- * renders the composer-dock line; this plugin intentionally adds no command and
- * no agent tool.
+ * Serve the same-origin read route that the client dock polls.
+ *
+ * The Host half also tags every magpie inference with `X-Magpie-Session`, so
+ * the gateway can answer `/v1/magpie/route?session=...` for *this* DSH session
+ * (including an in-flight request's already-picked target). The trace endpoint
+ * remains the fallback for the first paint and for profiles where no inference
+ * has happened yet. The plugin adds no command and no agent tool.
  */
 export function apply(ctx, config = {}) {
   const settings = { ...DEFAULTS, ...(config && typeof config === 'object' ? config : {}) }
+  let lastSession
+
+  // Only a transport header is added; the request body, model, and tool set are untouched.
+  ctx.effect(() => ctx.on('llm-pi-ai/request-headers', (request, headers, next) => {
+    if (request.provider === 'magpie'
+      && typeof request.sessionId === 'string'
+      && request.sessionId.length > 0) {
+      lastSession = request.sessionId
+      headers.set('x-magpie-session', request.sessionId)
+    }
+    return next()
+  }))
 
   ctx.effect(() => ctx.webServer.register({
     kind: 'exact',
@@ -39,10 +55,16 @@ export function apply(ctx, config = {}) {
       if (origin !== null && origin !== url.origin) {
         return jsonResponse({ error: 'forbidden origin' }, 403)
       }
-      const rawLimit = Number(url.searchParams.get('limit'))
-      const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 1
       try {
-        const result = await collectRoutes({ ...settings, limit, signal: request.signal })
+        let result
+        if (lastSession) {
+          result = await collectRoutes({ ...settings, session: lastSession, signal: request.signal })
+          if (result.kind === 'session-empty') {
+            result = await collectRoutes({ ...settings, limit: 1, signal: request.signal })
+          }
+        } else {
+          result = await collectRoutes({ ...settings, limit: 1, signal: request.signal })
+        }
         return jsonResponse(result)
       } catch (error) {
         return jsonResponse({ error: describeError(error, settings.baseURL) }, 502)

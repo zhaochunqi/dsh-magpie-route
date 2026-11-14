@@ -23,6 +23,7 @@ window.__ModuleLoader__.load({
         loading: '读取中…',
         unreachable: '网关不可用（点击重试）',
         none: '暂无已完成的请求',
+        inFlight: '进行中',
         inFlightPrefix: '另有 ',
         inFlightSuffix: ' 条进行中',
         clickRefresh: '点击刷新',
@@ -35,6 +36,7 @@ window.__ModuleLoader__.load({
         loading: 'loading…',
         unreachable: 'gateway unreachable (click to retry)',
         none: 'no settled request yet',
+        inFlight: 'in flight',
         inFlightPrefix: '',
         inFlightSuffix: ' in flight',
         clickRefresh: 'click to refresh',
@@ -106,13 +108,18 @@ window.__ModuleLoader__.load({
         let timer = null
         const run = async () => {
           try {
-            const response = await fetch(`${ROUTE}?limit=1`, { headers: { accept: 'application/json' } })
+            const response = await fetch(`${ROUTE}`, { headers: { accept: 'application/json' } })
             const body = await response.json()
             if (!alive) return
             if (!response.ok || body.error) {
               setState({ phase: 'error', message: body.error || 'magpie gateway unavailable' })
             } else {
-              setState({ phase: 'ok', route: (body.routes || [])[0] || null, pending: body.pending || 0 })
+              setState({
+                phase: 'ok',
+                kind: body.kind || 'trace',
+                route: (body.routes || [])[0] || null,
+                pending: body.pending || 0,
+              })
             }
           } catch (error) {
             if (alive) setState({ phase: 'error', message: String((error && error.message) || error) })
@@ -142,7 +149,11 @@ window.__ModuleLoader__.load({
           dot = 'var(--dsw-alias-state-success-primary)'
           const asked = route.asked ? `${route.asked} → ` : ''
           const rule = route.rule ? ` [${route.rule}]` : ''
-          const pending = state.pending > 0 ? ` · ${t.inFlightPrefix}${state.pending}${t.inFlightSuffix}` : ''
+          const pending = state.pending > 0
+            ? (state.kind === 'session'
+              ? ` · ${t.inFlight}`
+              : ` · ${t.inFlightPrefix}${state.pending}${t.inFlightSuffix}`)
+            : ''
           text = `${t.label} · ${timeOf(route.time)} ${asked}${route.real}${rule}${pending}`
           title = `${t.sourcePrefix}${ROUTE}${t.sourceSuffix}`
         }
