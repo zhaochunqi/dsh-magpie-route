@@ -1,5 +1,7 @@
 # dsh-magpie-route
 
+![magpie 真实路由显示在输入框下方](https://raw.githubusercontent.com/zhaochunqi/dsh-magpie-route/main/docs/preview.png)
+
 DeepSeek Harness（`dsh`）插件：把 [magpie](https://usemagpie.ai) 路由组别名背后的**真实上游模型**直接显示在输入框下方。
 
 DSH 的模型选择器只知道你配置的路由组别名（例如 `magpie/group/daily`）；请求实际发往哪个上游 provider/model 由本地 magpie 网关决定，而且可能逐轮变化。本插件读取网关自己的 trace，把真实结果显示出来。
@@ -19,7 +21,7 @@ DSH 的模型选择器只知道你配置的路由组别名（例如 `magpie/grou
 ## 要求
 
 - 带 composer dock slot 的 DeepSeek Harness（0.2.x）。
-- 正在运行的 [magpie](https://usemagpie.ai) 网关。默认 `http://127.0.0.1:3425`，可在 bundle 配置里改。
+- 正在运行的 [magpie](https://usemagpie.ai) 网关，默认地址 `http://127.0.0.1:3425`。
 
 ## 安装
 
@@ -29,17 +31,7 @@ DSH 的模型选择器只知道你配置的路由组别名（例如 `magpie/grou
 
 ## 配置
 
-在 profile 的 `cordis.patch.yml` 里改该插件行的 config（Host-only bundle 没有 UI 配置表单）：
-
-```yaml
-- id: magpie-route
-  config:
-    baseURL: http://127.0.0.1:3425
-    agent: dsh
-    limit: 5
-```
-
-`agent` 是 magpie trace 里的 agent 名（默认 `dsh`）；`limit` 是路由返回的最近已完成条数（界面显示第一条）。
+默认无需配置：插件自动连接本地网关 `http://127.0.0.1:3425`，并按 `dsh` agent 过滤。只有网关不在默认地址时，才需要在 profile 的 `cordis.patch.yml` 里覆盖 `baseURL`（以及可选的 `agent`/`limit`）。
 
 ## 工作原理
 

@@ -1,5 +1,7 @@
 # dsh-magpie-route
 
+![magpie real route in the DSH composer dock](https://raw.githubusercontent.com/zhaochunqi/dsh-magpie-route/main/docs/preview.png)
+
 A DeepSeek Harness (`dsh`) plugin that shows the **real upstream model** behind a [magpie](https://usemagpie.ai) routing-group alias, directly below the composer.
 
 DSH's model picker only knows the routing-group alias you configured (for example `magpie/group/daily`). The local magpie gateway decides which upstream provider/model actually serves each request, and that can change from turn to turn. This plugin reads the gateway's own trace and shows the real result.
@@ -19,7 +21,7 @@ DSH's model picker only knows the routing-group alias you configured (for exampl
 ## Requirements
 
 - DeepSeek Harness with the composer dock slot (0.2.x).
-- A running [magpie](https://usemagpie.ai) gateway. Default base URL `http://127.0.0.1:3425`, overridable in the bundle config.
+- A running [magpie](https://usemagpie.ai) gateway on the default `http://127.0.0.1:3425`.
 
 ## Install
 
@@ -29,17 +31,7 @@ For a local checkout instead, install the bundle directory with `plugin_manager`
 
 ## Configuration
 
-Edit the plugin row's config in your profile's `cordis.patch.yml` (a Host-only bundle has no UI config form):
-
-```yaml
-- id: magpie-route
-  config:
-    baseURL: http://127.0.0.1:3425
-    agent: dsh
-    limit: 5
-```
-
-`agent` is the magpie trace agent name to filter on (default `dsh`); `limit` is the number of recent settled rows the route returns (the dock shows the first).
+No configuration is required: the plugin talks to the default local gateway at `http://127.0.0.1:3425` and filters the `dsh` agent. Only if your gateway runs elsewhere, override `baseURL` (and optionally `agent`/`limit`) in your profile's `cordis.patch.yml`.
 
 ## How it works
 

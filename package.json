@@ -43,6 +43,7 @@
     "route-query.js",
     "cordis.patch.yml",
     "locale/*.json",
+    "docs",
     "icon.svg",
     "README.md",
     "README.zh.md",

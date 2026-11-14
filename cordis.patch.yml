@@ -1,7 +1,4 @@
 - insert:
     - id: magpie-route
       name: 'dsh-magpie-route'
-      config:
-        baseURL: http://127.0.0.1:3425
-        agent: dsh
-        limit: 5
+      config: {}
