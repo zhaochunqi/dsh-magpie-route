@@ -11,6 +11,7 @@ DSH's model picker only knows the routing-group alias you configured (for exampl
 ## Features
 
 - **Composer dock line** — sits below the composer, refreshes every 15 seconds, and refreshes immediately on click. Shows the time, the asked alias, the real `provider/model`, and the matched routing rule.
+- **Follows the DSH UI language** — the line reads `magpie real route` in English and `magpie 真实路由` in Chinese (and switches live when the UI language changes).
 - Green dot = a settled route; red dot = the gateway is unreachable (click to retry); grey dot = no settled request yet. Hover for the data source.
 - Read-only: it sends no model request, changes no routing, and injects no headers.
 - **No command and no agent tool** — this plugin only displays the route.

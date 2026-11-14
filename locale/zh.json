@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Magpie 真实路由",
-    "description": "把 magpie 路由组别名背后的真实上游模型直接显示在输入框下方。界面行每 15 秒自动刷新、点击刷新，读取 Host 半的同源路由 /plugins/magpie-route/route（浏览器无需直连网关）。只读，不发模型请求、不改路由；需要 magpie 网关正在运行，进行中且尚无 usage 的请求只计数、不显示为结论。DSH 不发送 X-Magpie-Session，界面行显示所有 DSH 会话中最近完成的一条。默认网关为 http://127.0.0.1:3425，baseURL、agent、limit 需编辑该 bundle 的 cordis.patch.yml 后重新加载/重启生效（无 UI 配置表单）。本插件不提供命令，也不提供 agent 工具。"
+    "description": "把 magpie 路由组别名背后的真实上游模型直接显示在输入框下方（文本跟随 DSH 界面语言：中文“magpie 真实路由”，英文“magpie real route”）。界面行每 15 秒自动刷新、点击刷新，读取 Host 半的同源路由 /plugins/magpie-route/route（浏览器无需直连网关）。只读，不发模型请求、不改路由；需要 magpie 网关正在运行，进行中且尚无 usage 的请求只计数、不显示为结论。DSH 不发送 X-Magpie-Session，界面行显示所有 DSH 会话中最近完成的一条。默认网关为 http://127.0.0.1:3425，baseURL、agent、limit 需编辑该 bundle 的 cordis.patch.yml 后重新加载/重启生效（无 UI 配置表单）。本插件不提供命令，也不提供 agent 工具。"
   }
 }

@@ -4,8 +4,9 @@
  * Host half over a same-origin route (the gateway itself sends no CORS headers).
  * Clicking the line refreshes immediately; the row also refreshes every 15s.
  *
- * Only the `react` module is required here; all styling is inline so the factory
- * does not depend on any other client builtin.
+ * The label follows the DSH UI language (Chinese / English). Only the `react`
+ * module is required; all styling is inline so the factory does not depend on
+ * any other client builtin.
  */
 window.__ModuleLoader__.load({
   id: 'dsh-magpie-route',
@@ -14,6 +15,34 @@ window.__ModuleLoader__.load({
     const h = React.createElement
     const ROUTE = '/plugins/magpie-route/route'
     const REFRESH_MS = 15000
+    const NS = 'magpieRoute'
+
+    const DICT = {
+      zh: {
+        label: 'magpie 真实路由',
+        loading: '读取中…',
+        unreachable: '网关不可用（点击重试）',
+        none: '暂无已完成的请求',
+        inFlightPrefix: '另有 ',
+        inFlightSuffix: ' 条进行中',
+        clickRefresh: '点击刷新',
+        sourcePrefix: '数据源 ',
+        sourceSuffix: ' · 点击刷新',
+        aria: 'magpie 真实路由，点击刷新',
+      },
+      en: {
+        label: 'magpie real route',
+        loading: 'loading…',
+        unreachable: 'gateway unreachable (click to retry)',
+        none: 'no settled request yet',
+        inFlightPrefix: '',
+        inFlightSuffix: ' in flight',
+        clickRefresh: 'click to refresh',
+        sourcePrefix: 'source ',
+        sourceSuffix: ' · click to refresh',
+        aria: 'magpie real route, click to refresh',
+      },
+    }
 
     const baseStyle = {
       display: 'flex',
@@ -45,9 +74,32 @@ window.__ModuleLoader__.load({
       return text.length >= 19 ? text.slice(11, 16) : ''
     }
 
-    function MagpieRouteDock() {
+    function currentLang(ctx) {
+      try {
+        const snapshot = ctx.locale.getLocale()
+        return String((snapshot && snapshot.id) || 'zh').slice(0, 2) === 'en' ? 'en' : 'zh'
+      } catch {
+        return 'zh'
+      }
+    }
+
+    function MagpieRouteDock(props) {
+      const ctx = props.ctx
       const [state, setState] = React.useState({ phase: 'loading' })
       const [nonce, setNonce] = React.useState(0)
+      const [lang, setLang] = React.useState(() => currentLang(ctx))
+
+      React.useEffect(() => {
+        let unsubscribe = null
+        try {
+          unsubscribe = ctx.locale.subscribe(() => setLang(currentLang(ctx)))
+        } catch {
+          /* locale is optional for rendering */
+        }
+        return () => {
+          if (typeof unsubscribe === 'function') unsubscribe()
+        }
+      }, [ctx])
 
       React.useEffect(() => {
         let alive = true
@@ -58,7 +110,7 @@ window.__ModuleLoader__.load({
             const body = await response.json()
             if (!alive) return
             if (!response.ok || body.error) {
-              setState({ phase: 'error', message: body.error || 'magpie 网关不可用' })
+              setState({ phase: 'error', message: body.error || 'magpie gateway unavailable' })
             } else {
               setState({ phase: 'ok', route: (body.routes || [])[0] || null, pending: body.pending || 0 })
             }
@@ -74,25 +126,25 @@ window.__ModuleLoader__.load({
         }
       }, [nonce])
 
+      const t = DICT[lang] || DICT.zh
       let dot = 'var(--dsw-alias-state-idle-primary)'
-      let text = 'magpie 真实路由 · 读取中…'
-      let title = '点击刷新'
+      let text = `${t.label} · ${t.loading}`
+      let title = t.clickRefresh
       if (state.phase === 'error') {
         dot = 'var(--dsw-alias-state-error-primary)'
-        text = 'magpie 真实路由 · 网关不可用（点击重试）'
+        text = `${t.label} · ${t.unreachable}`
         title = state.message || text
       } else if (state.phase === 'ok') {
         const route = state.route
         if (!route) {
-          text = 'magpie 真实路由 · 暂无已完成的请求'
-          title = '点击刷新'
+          text = `${t.label} · ${t.none}`
         } else {
           dot = 'var(--dsw-alias-state-success-primary)'
           const asked = route.asked ? `${route.asked} → ` : ''
           const rule = route.rule ? ` [${route.rule}]` : ''
-          const pending = state.pending > 0 ? ` · 另有 ${state.pending} 条进行中` : ''
-          text = `magpie 真实路由 · ${timeOf(route.time)} ${asked}${route.real}${rule}${pending}`
-          title = `数据源 ${ROUTE} · 点击刷新`
+          const pending = state.pending > 0 ? ` · ${t.inFlightPrefix}${state.pending}${t.inFlightSuffix}` : ''
+          text = `${t.label} · ${timeOf(route.time)} ${asked}${route.real}${rule}${pending}`
+          title = `${t.sourcePrefix}${ROUTE}${t.sourceSuffix}`
         }
       }
 
@@ -100,7 +152,7 @@ window.__ModuleLoader__.load({
         type: 'button',
         style: baseStyle,
         title,
-        'aria-label': 'magpie 真实路由，点击刷新',
+        'aria-label': t.aria,
         onClick: () => setNonce(value => value + 1),
       },
       h('span', {
@@ -116,13 +168,33 @@ window.__ModuleLoader__.load({
     }
 
     return {
-      inject: ['slots'],
+      inject: ['slots', 'locale'],
       apply(ctx) {
+        ctx.effect(() => {
+          const disposers = []
+          for (const locale of Object.keys(DICT)) {
+            try {
+              disposers.push(ctx.locale.register(NS, locale, DICT[locale]))
+            } catch {
+              /* locale registration is best-effort */
+            }
+          }
+          return () => {
+            for (const dispose of disposers) {
+              try {
+                dispose()
+              } catch {
+                /* ignore */
+              }
+            }
+          }
+        }, 'dsh-magpie-route: dictionaries')
+
         ctx.slots.inject('conversation.composer.dock', () => ctx.slots.register({
           name: 'conversation.composer.dock',
           id: 'magpie-route-dock',
           order: 40,
-        }, MagpieRouteDock))
+        }, props => h(MagpieRouteDock, { ...props, ctx })))
       },
     }
   },
