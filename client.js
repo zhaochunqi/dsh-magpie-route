@@ -8,7 +8,7 @@
  * does not depend on any other client builtin.
  */
 window.__ModuleLoader__.load({
-  id: '@local/dsh-magpie-route',
+  id: 'dsh-magpie-route',
   factory(require) {
     const React = require('react')
     const h = React.createElement
