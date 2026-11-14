@@ -44,6 +44,7 @@
     "cordis.patch.yml",
     "locale/*.json",
     "docs",
+    "screenshots.json",
     "icon.svg",
     "README.md",
     "README.zh.md",
