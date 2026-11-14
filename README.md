@@ -11,10 +11,9 @@ DSH's model picker only knows the routing-group alias you configured (for exampl
 ## Features
 
 - **Composer dock line** — sits below the composer, refreshes every 15 seconds, and refreshes immediately on click. Shows the time, the asked alias, the real `provider/model`, and the matched routing rule.
-- **`/magpie-route` slash command** — `/magpie-route` shows the last 5 settled requests; `/magpie-route 10` shows up to 20; `/magpie-route <magpie-session-id>` queries one session route.
-- **`magpie_route` agent tool** — the same data, callable by the agent (`session`, `limit` optional).
-
-Read-only: it sends no model request, changes no routing, and injects no headers. If the gateway is down the dock and the command say so.
+- Green dot = a settled route; red dot = the gateway is unreachable (click to retry); grey dot = no settled request yet. Hover for the data source.
+- Read-only: it sends no model request, changes no routing, and injects no headers.
+- **No command and no agent tool** — this plugin only displays the route.
 
 ## Requirements
 
@@ -39,12 +38,12 @@ Edit the plugin row's config in your profile's `cordis.patch.yml` (a Host-only b
     limit: 5
 ```
 
-`agent` is the magpie trace agent name to filter on (default `dsh`); `limit` is the default number of rows.
+`agent` is the magpie trace agent name to filter on (default `dsh`); `limit` is the number of recent settled rows the route returns (the dock shows the first).
 
 ## How it works
 
-- The Host half reads `GET {baseURL}/v1/magpie/trace` (real `provider/model` and rule per settled request) and `GET {baseURL}/v1/magpie/route?session=...` (one session route).
-- The client half polls the package's same-origin route `/plugins/magpie-route/route`, because the magpie gateway sends no CORS headers.
+- The Host half reads `GET {baseURL}/v1/magpie/trace` (real `provider/model` and rule per settled request) and serves it on the package's same-origin route `/plugins/magpie-route/route`.
+- The client half renders the composer-dock line by polling that same-origin route, because the magpie gateway sends no CORS headers.
 
 ## Limitations
 

@@ -1,7 +1,7 @@
 {
   "name": "dsh-magpie-route",
-  "version": "0.2.1",
-  "description": "DeepSeek Harness plugin: show the real upstream model behind a magpie routing group in the composer dock, with a /magpie-route command and a magpie_route tool.",
+  "version": "1.0.0",
+  "description": "DeepSeek Harness plugin: show the real upstream model behind a magpie routing group directly below the composer.",
   "type": "module",
   "license": "MIT",
   "author": "zhaochunqi <git@zhaochunqi.com>",

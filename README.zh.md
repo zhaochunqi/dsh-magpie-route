@@ -11,10 +11,9 @@ DSH 的模型选择器只知道你配置的路由组别名（例如 `magpie/grou
 ## 功能
 
 - **输入框下方常驻一行**：每 15 秒刷新，点击立即刷新；显示时间、请求别名、真实 `provider/model` 和命中的路由规则。
-- **`/magpie-route` 命令**：`/magpie-route` 显示最近 5 次已完成请求；`/magpie-route 10` 最多 20 条；`/magpie-route <magpie-session-id>` 查某个会话的路由。
-- **`magpie_route` 工具**：agent 可调用，参数 `session`、`limit` 可选。
-
-只读：不发模型请求、不改路由、不注入请求头。网关不可用时界面行和命令都会明确报错。
+- 绿点 = 有已完成结果；红点 = 网关不可用（点击重试）；灰点 = 暂无已完成请求；悬停显示数据源。
+- 只读：不发模型请求、不改路由、不注入请求头。
+- **不提供命令，也不提供 agent 工具**，插件只负责界面显示。
 
 ## 要求
 
@@ -39,12 +38,12 @@ DSH 的模型选择器只知道你配置的路由组别名（例如 `magpie/grou
     limit: 5
 ```
 
-`agent` 是 magpie trace 里的 agent 名（默认 `dsh`）；`limit` 默认显示条数。
+`agent` 是 magpie trace 里的 agent 名（默认 `dsh`）；`limit` 是路由返回的最近已完成条数（界面显示第一条）。
 
 ## 工作原理
 
-- Host 半读取 `GET {baseURL}/v1/magpie/trace`（每条已完成请求的真实 `provider/model` 与规则）和 `GET {baseURL}/v1/magpie/route?session=...`（单会话路由）。
-- Client 半轮询本包 Host 的同源路由 `/plugins/magpie-route/route`，因为 magpie 网关没有 CORS 头。
+- Host 半读取 `GET {baseURL}/v1/magpie/trace`（每条已完成请求的真实 `provider/model` 与规则），并挂在同源路由 `/plugins/magpie-route/route` 上。
+- Client 半轮询这个同源路由，渲染输入框下方那一行，因为 magpie 网关没有 CORS 头。
 
 ## 限制
 
