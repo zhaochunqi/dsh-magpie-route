@@ -1,0 +1,59 @@
+{
+  "name": "dsh-magpie-route",
+  "version": "0.2.1",
+  "description": "DeepSeek Harness plugin: show the real upstream model behind a magpie routing group in the composer dock, with a /magpie-route command and a magpie_route tool.",
+  "type": "module",
+  "license": "MIT",
+  "author": "zhaochunqi <git@zhaochunqi.com>",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "deepseek",
+    "magpie",
+    "llm",
+    "llm-routing",
+    "model-router",
+    "composer-dock"
+  ],
+  "homepage": "https://github.com/zhaochunqi/dsh-magpie-route#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhaochunqi/dsh-magpie-route.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zhaochunqi/dsh-magpie-route/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./route-query.js": "./route-query.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "route-query.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "README.zh.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": ["@deepseek-ai/dsh-client-ui-conversation"]
+    }
+  }
+}
