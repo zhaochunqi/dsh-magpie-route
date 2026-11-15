@@ -150,5 +150,5 @@ export function formatRoutes(result) {
 
 export function describeError(error, baseURL) {
   const reason = error instanceof Error ? error.message : String(error)
-  return `查询 magpie 网关失败：${reason}\n请确认 magpie 正在运行并监听 ${normalizeBaseURL(baseURL)}（/v1/magpie/trace、/v1/magpie/route）。`
+  return `查询 magpie 网关失败：${reason}\n当前使用的网关地址是 ${normalizeBaseURL(baseURL)}（自动取自 DSH 里 llm-pi-ai 的 magpie baseURL）；请确认 magpie 正在运行并监听该地址（/v1/magpie/trace、/v1/magpie/route）。如 DSH 里的地址与实际不符，可在插件 config.baseURL 里覆盖。`
 }

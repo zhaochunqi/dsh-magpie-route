@@ -22,7 +22,7 @@ DSH's model picker only knows the routing-group alias you configured (for exampl
 ## Requirements
 
 - DeepSeek Harness with the composer dock slot (0.2.x).
-- A running [magpie](https://usemagpie.ai) gateway on the default `http://127.0.0.1:3425`.
+- A running [magpie](https://usemagpie.ai) gateway. The plugin follows the endpoint DSH already uses for the `magpie` provider, so it tracks whatever host/port your DSH profile configures (default `http://127.0.0.1:3425`).
 
 ## Install
 
@@ -32,11 +32,12 @@ For a local checkout instead, install the bundle directory with `plugin_manager`
 
 ## Configuration
 
-No configuration is required: the plugin talks to the default local gateway at `http://127.0.0.1:3425` and filters the `dsh` agent. Only if your gateway runs elsewhere, override `baseURL` (and optionally `agent`/`limit`) in your profile's `cordis.patch.yml`.
+No configuration is required. The Host half discovers the gateway from DSH itself: every magpie inference reports its resolved endpoint through `llm-pi-ai/request-headers`, and before the first inference it reads `llm-pi-ai`'s `providers.magpie.baseURL` (then `magpie-anthropic`, then `http://127.0.0.1:3425`). An explicit `baseURL` in the plugin row's `config` wins, so you only set it to point at an address DSH does not know about.
 
 ## How it works
 
-- The Host half contributes `X-Magpie-Session: <dsh session id>` through DSH's `llm-pi-ai/request-headers` waterfall (a header only; no request-body, model, or tool change), then reads `GET {baseURL}/v1/magpie/route?session=<dsh session id>` for this session's current/last route.
+- The Host half derives the gateway root from the `baseURL` that DSH reports for each magpie inference through the `llm-pi-ai/request-headers` waterfall (no config-file parsing), contributes `X-Magpie-Session: <dsh session id>` (a header only; no request-body, model, or tool change), then reads `GET {baseURL}/v1/magpie/route?session=<dsh session id>` for this session's current/last route.
+- Before the first inference it reads `llm-pi-ai`'s configured `providers.magpie.baseURL` from the live Loader config (falling back to `http://127.0.0.1:3425`), so the first paint already uses the right port.
 - `GET {baseURL}/v1/magpie/trace` is the fallback for the first paint, before any inference has happened in this Host process.
 - The client half renders the composer-dock line by polling the package's same-origin route `/plugins/magpie-route/route`, because the magpie gateway sends no CORS headers.
 
@@ -47,6 +48,7 @@ No configuration is required: the plugin talks to the default local gateway at `
 - `trace` keeps a recent window (about 60 rows), not full history. For full history use `magpie usage --csv`.
 - `trace` reports `provider/model`; the final `served_model` (for example `hy4-free`) appears in `magpie usage --csv`.
 - Routing groups use session affinity and rules, so the "current real model" can change per turn.
+- The gateway address mirrors whatever DSH has configured for the `magpie` provider. If that DSH value is stale (for example after moving magpie without reconnecting it), the dock shows the same stale endpoint; set `config.baseURL` to correct it.
 
 ## Uninstall
 

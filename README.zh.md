@@ -22,7 +22,7 @@ DSH 的模型选择器只知道你配置的路由组别名（例如 `magpie/grou
 ## 要求
 
 - 带 composer dock slot 的 DeepSeek Harness（0.2.x）。
-- 正在运行的 [magpie](https://usemagpie.ai) 网关，默认地址 `http://127.0.0.1:3425`。
+- 正在运行的 [magpie](https://usemagpie.ai) 网关。插件会跟随 DSH 里 `magpie` provider 已经使用的地址，所以 DSH profile 配的是哪个主机/端口就跟哪个（默认 `http://127.0.0.1:3425`）。
 
 ## 安装
 
@@ -32,11 +32,12 @@ DSH 的模型选择器只知道你配置的路由组别名（例如 `magpie/grou
 
 ## 配置
 
-默认无需配置：插件自动连接本地网关 `http://127.0.0.1:3425`，并按 `dsh` agent 过滤。只有网关不在默认地址时，才需要在 profile 的 `cordis.patch.yml` 里覆盖 `baseURL`（以及可选的 `agent`/`limit`）。
+默认无需配置。Host 半从 DSH 自身取网关地址：每次 magpie 推理都会通过 `llm-pi-ai/request-headers` 报告解析后的 endpoint；首次绘制之前则读 `llm-pi-ai` 的 `providers.magpie.baseURL`（再退 `magpie-anthropic`，最后兜底 `http://127.0.0.1:3425`）。插件行 `config` 里显式设置的 `baseURL` 优先级最高，只有要指向 DSH 不知道的地址时才需要写。
 
 ## 工作原理
 
-- Host 半通过 DSH 的 `llm-pi-ai/request-headers` waterfall 给每次 magpie 推理加上 `X-Magpie-Session: <dsh session id>`（只加请求头，不改请求体、模型或工具集），然后读取 `GET {baseURL}/v1/magpie/route?session=<dsh session id>` 得到本会话当前/最近的路由。
+- Host 半从 DSH 为每次 magpie 推理报告的 `baseURL`（`llm-pi-ai/request-headers` waterfall）推导出网关根地址，不解析任何配置文件；同时加上 `X-Magpie-Session: <dsh session id>`（只加请求头，不改请求体、模型或工具集），然后读取 `GET {baseURL}/v1/magpie/route?session=<dsh session id>` 得到本会话当前/最近的路由。
+- 首次推理之前，它从运行中的 Loader 配置读取 `llm-pi-ai` 的 `providers.magpie.baseURL`（兜底 `http://127.0.0.1:3425`），所以首帧就用对端口。
 - `GET {baseURL}/v1/magpie/trace` 只作为首次绘制的兜底（Host 进程里还没有发生过推理时）。
 - Client 半轮询本包 Host 的同源路由 `/plugins/magpie-route/route`，渲染输入框下方那一行，因为 magpie 网关没有 CORS 头。
 
@@ -47,6 +48,7 @@ DSH 的模型选择器只知道你配置的路由组别名（例如 `magpie/grou
 - `trace` 只保留最近窗口（约 60 条），不是完整历史；完整历史用 `magpie usage --csv`。
 - `trace` 显示 `provider/model`；最终 `served_model`（如 `hy4-free`）只在 `magpie usage --csv` 里出现。
 - 路由组有会话亲和与规则路由，“当前真实模型”可能逐轮变化。
+- 网关地址跟 DSH 给 `magpie` provider 配的值一致。如果 DSH 里那个值本身过期了（比如 magpie 换了端口但没重新接入），dock 会显示同一个过期地址；此时用 `config.baseURL` 覆盖即可。
 
 ## 卸载
 
