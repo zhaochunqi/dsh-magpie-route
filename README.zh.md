@@ -39,7 +39,7 @@ DSH 的模型选择器只知道你配置的路由组别名（例如 `magpie/grou
 - Host 半从 DSH 为每次 magpie 推理报告的 `baseURL`（`llm-pi-ai/request-headers` waterfall）推导出网关根地址，不解析任何配置文件；同时加上 `X-Magpie-Session: <dsh session id>`（只加请求头，不改请求体、模型或工具集），然后读取 `GET {baseURL}/v1/magpie/route?session=<dsh session id>` 得到本会话当前/最近的路由。
 - 首次推理之前，它从运行中的 Loader 配置读取 `llm-pi-ai` 的 `providers.magpie.baseURL`（兜底 `http://127.0.0.1:3425`），所以首帧就用对端口。
 - `GET {baseURL}/v1/magpie/trace` 只作为首次绘制的兜底（Host 进程里还没有发生过推理时）。
-- Client 半轮询本包 Host 的同源路由 `/plugins/magpie-route/route`，渲染输入框下方那一行，因为 magpie 网关没有 CORS 头。
+- Client 半轮询本包 Host 的同源路由 `/plugins/magpie-route/route`，渲染输入框下方那一行，因为 magpie 网关没有 CORS 头。路由入口先检查 DSH 的 `connection.requestRejection`（Host/Origin 信任与浏览器认证），并额外拒绝 `Origin` 不匹配的请求。
 
 ## 限制
 

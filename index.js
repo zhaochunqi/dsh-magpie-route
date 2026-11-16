@@ -4,7 +4,7 @@ import { collectRoutes, describeError } from './route-query.js'
 export const name = 'magpie-route'
 
 /** Only the same-origin route remains: the plugin has no command and no agent tool. */
-export const inject = ['webServer']
+export const inject = ['webServer', 'connection']
 
 /** Last resort only. The real endpoint comes from the DSH profile's magpie provider. */
 const FALLBACK_BASE_URL = 'http://127.0.0.1:3425'
@@ -120,6 +120,7 @@ export function apply(ctx, config = {}) {
     limit: raw.limit,
   }
 
+  const connection = ctx.connection
   let lastSession
   let eventBaseURL
   let storedBaseURL
@@ -151,6 +152,9 @@ export function apply(ctx, config = {}) {
     kind: 'exact',
     path: CLIENT_ROUTE,
     resource: async (request) => {
+      const rejection = connection.requestRejection(request)
+      if (rejection !== undefined) return new Response(null, { status: rejection })
+
       const url = new URL(request.url)
       const origin = request.headers.get('origin')
       if (origin !== null && origin !== url.origin) {

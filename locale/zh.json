@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Magpie 真实路由",
-    "description": "把 magpie 路由组别名背后的真实上游模型直接显示在输入框下方（文本跟随 DSH 界面语言：中文“magpie 真实路由”，英文“magpie real route”）。Host 半给每次 magpie 推理加上 X-Magpie-Session，并读取 /v1/magpie/route 得到本会话当前/最近的路由（进行中请求显示已选定目标）；trace 仅作为首次绘制兜底。界面行每 15 秒自动刷新、点击刷新，读取 Host 半的同源路由 /plugins/magpie-route/route（浏览器无需直连网关）。只读，不发模型请求、不改路由；需要 magpie 网关正在运行。默认无需配置：Host 半会从 DSH 当前生效的 magpie provider 配置里自动取得网关地址——每次推理的 request.baseURL，首帧读 llm-pi-ai 的 providers.magpie.baseURL，最后才兜底 http://127.0.0.1:3425；只有要指向 DSH 之外的地址时才需在插件 config.baseURL 里覆盖。本插件不提供命令，也不提供 agent 工具。"
+    "description": "把 magpie 路由组别名背后的真实上游模型直接显示在输入框下方（文本跟随 DSH 界面语言：中文“magpie 真实路由”，英文“magpie real route”）。Host 半给每次 magpie 推理加上 X-Magpie-Session，并读取 /v1/magpie/route 得到本会话当前/最近的路由（进行中请求显示已选定目标）；trace 仅作为首次绘制兜底。界面行每 15 秒自动刷新、点击刷新，读取 Host 半的同源路由 /plugins/magpie-route/route（浏览器无需直连网关）；路由入口先经过 DSH connection.requestRejection（Host/Origin 信任与浏览器认证）检查，并拒绝 Origin 不匹配的请求。只读，不发模型请求、不改路由；需要 magpie 网关正在运行。默认无需配置：Host 半会从 DSH 当前生效的 magpie provider 配置里自动取得网关地址——每次推理的 request.baseURL，首帧读 llm-pi-ai 的 providers.magpie.baseURL，最后才兜底 http://127.0.0.1:3425；只有要指向 DSH 之外的地址时才需在插件 config.baseURL 里覆盖。本插件不提供命令，也不提供 agent 工具。"
   }
 }
