@@ -1,6 +1,6 @@
 # dsh-magpie-route
 
-[![npm downloads](https://img.shields.io/npm/dm/dsh-magpie-route)](https://www.npmjs.com/package/dsh-magpie-route)
+[![npm downloads](https://badgen.net/npm/dm/dsh-magpie-route)](https://www.npmjs.com/package/dsh-magpie-route) [![npm version](https://badgen.net/npm/v/dsh-magpie-route)](https://www.npmjs.com/package/dsh-magpie-route) [![GitHub release](https://badgen.net/github/release/zhaochunqi/dsh-magpie-route)](https://github.com/zhaochunqi/dsh-magpie-route/releases) [![Node.js](https://img.shields.io/node/v/dsh-magpie-route)](https://www.npmjs.com/package/dsh-magpie-route) [![license](https://badgen.net/github/license/zhaochunqi/dsh-magpie-route)](https://github.com/zhaochunqi/dsh-magpie-route/blob/main/LICENSE)
 
 ![magpie real route in the DSH composer dock](https://raw.githubusercontent.com/zhaochunqi/dsh-magpie-route/main/docs/preview.png)
 

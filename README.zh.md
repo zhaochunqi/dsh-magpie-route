@@ -1,6 +1,6 @@
 # dsh-magpie-route
 
-[![npm 月下载量](https://img.shields.io/npm/dm/dsh-magpie-route)](https://www.npmjs.com/package/dsh-magpie-route)
+[![npm 月下载量](https://badgen.net/npm/dm/dsh-magpie-route)](https://www.npmjs.com/package/dsh-magpie-route) [![npm 版本](https://badgen.net/npm/v/dsh-magpie-route)](https://www.npmjs.com/package/dsh-magpie-route) [![GitHub Release](https://badgen.net/github/release/zhaochunqi/dsh-magpie-route)](https://github.com/zhaochunqi/dsh-magpie-route/releases) [![Node.js](https://img.shields.io/node/v/dsh-magpie-route)](https://www.npmjs.com/package/dsh-magpie-route) [![许可证](https://badgen.net/github/license/zhaochunqi/dsh-magpie-route)](https://github.com/zhaochunqi/dsh-magpie-route/blob/main/LICENSE)
 
 ![magpie 真实路由显示在输入框下方](https://raw.githubusercontent.com/zhaochunqi/dsh-magpie-route/main/docs/preview.png)
 
