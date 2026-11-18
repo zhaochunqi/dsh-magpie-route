@@ -154,6 +154,12 @@ export function apply(ctx, config = {}) {
     resource: async (request) => {
       const rejection = connection.requestRejection(request)
       if (rejection !== undefined) return new Response(null, { status: rejection })
+      if (request.method !== 'GET') {
+        return new Response(null, {
+          status: 405,
+          headers: { allow: 'GET' },
+        })
+      }
 
       const url = new URL(request.url)
       const origin = request.headers.get('origin')
