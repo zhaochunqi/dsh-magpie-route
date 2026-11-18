@@ -1,5 +1,7 @@
 # dsh-magpie-route
 
+[![npm 月下载量](https://img.shields.io/npm/dm/dsh-magpie-route)](https://www.npmjs.com/package/dsh-magpie-route)
+
 ![magpie 真实路由显示在输入框下方](https://raw.githubusercontent.com/zhaochunqi/dsh-magpie-route/main/docs/preview.png)
 
 DeepSeek Harness（`dsh`）插件：把 [magpie](https://usemagpie.ai) 路由组别名背后的**真实上游模型**直接显示在输入框下方。

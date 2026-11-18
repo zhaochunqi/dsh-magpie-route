@@ -1,5 +1,7 @@
 # dsh-magpie-route
 
+[![npm downloads](https://img.shields.io/npm/dm/dsh-magpie-route)](https://www.npmjs.com/package/dsh-magpie-route)
+
 ![magpie real route in the DSH composer dock](https://raw.githubusercontent.com/zhaochunqi/dsh-magpie-route/main/docs/preview.png)
 
 A DeepSeek Harness (`dsh`) plugin that shows the **real upstream model** behind a [magpie](https://usemagpie.ai) routing-group alias, directly below the composer.
