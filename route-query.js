@@ -120,10 +120,8 @@ export async function collectRoutes(options = {}) {
 export function formatRoutes(result) {
   if (result.kind === 'session-empty') {
     return [
-      `该会话在 magpie 里没有 route 记录（session ${result.session}）。`,
-      'DSH 目前不发送 X-Magpie-Session，网关无法按会话关联路由；magpie 会话 id 不是 DSH 会话 id。',
-      '可从 magpie sessions --json 或 magpie usage --csv 找到 magpie 会话 id。',
-      '直接输入 /magpie-route 查看最近请求的真实落点。',
+      `该 DSH 会话暂时没有 magpie route 记录（session ${result.session}）。`,
+      '发起一次 magpie 请求后，这里会显示该会话的当前或最近路由。',
     ].join('\n')
   }
   const lines = []
