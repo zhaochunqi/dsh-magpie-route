@@ -73,13 +73,15 @@ window.__ModuleLoader__.load({
 
     function timeOf(value) {
       const text = typeof value === 'string' ? value : ''
+      if (/^\d{2}:\d{2}/u.test(text)) return text.slice(0, 5)
       return text.length >= 19 ? text.slice(11, 16) : ''
     }
 
     function currentLang(ctx) {
       try {
         const snapshot = ctx.locale.getLocale()
-        return String((snapshot && snapshot.id) || 'zh').slice(0, 2) === 'en' ? 'en' : 'zh'
+        const id = snapshot && (snapshot.active || snapshot.id)
+        return String(id || 'zh').slice(0, 2) === 'en' ? 'en' : 'zh'
       } catch {
         return 'zh'
       }
