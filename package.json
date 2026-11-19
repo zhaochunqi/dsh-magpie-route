@@ -1,6 +1,6 @@
 {
   "name": "dsh-magpie-route",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "description": "DeepSeek Harness plugin: show the real upstream model behind a magpie routing group directly below the composer.",
   "type": "module",
   "license": "MIT",
