@@ -40,13 +40,13 @@ No configuration is required. The Host half discovers the gateway from DSH itsel
 
 - The Host half derives the gateway root from the `baseURL` that DSH reports for each magpie inference through the `llm-pi-ai/request-headers` waterfall (no config-file parsing), contributes `X-Magpie-Session: <dsh session id>` (a header only; no request-body, model, or tool change), then reads `GET {baseURL}/v1/magpie/route?session=<dsh session id>` for this session's current/last route.
 - Before the first inference it reads `llm-pi-ai`'s configured `providers.magpie.baseURL` from the live Loader config (falling back to `http://127.0.0.1:3425`), so the first paint already uses the right port.
-- `GET {baseURL}/v1/magpie/trace` is the fallback for the first paint, before any inference has happened in this Host process.
-- The client half renders the composer-dock line by polling the package's same-origin route `/plugins/magpie-route/route`, because the magpie gateway sends no CORS headers. The route checks DSH's `connection.requestRejection` (Host/Origin trust and browser authentication) before serving data, in addition to rejecting a mismatched `Origin` header.
+- The Dock binds its session through the registration's `inject(sessionId)` callback. It never falls back to global `/v1/magpie/trace` records.
+- The client half polls `/plugins/magpie-route/route?session=<current session id>` because the gateway sends no CORS headers. The route checks DSH's `connection.requestRejection` and rejects a mismatched `Origin` header.
 
 ## Limitations
 
-- Shows **this session's current/last route**. An in-flight request shows its already-picked target with a "进行中 / in flight" marker; the final served model is still only confirmed after magpie finishes. On the first paint (before any inference), it falls back to the global latest settled `dsh` trace row.
-- The Host half remembers the most recent DSH session that sent a magpie request. If you open another session that has not requested anything yet, the dock may still show the previous session's route until that new session runs.
+- Shows **this session's current/last route**. An in-flight request shows its already-picked target; the final served model is confirmed after magpie finishes.
+- Sessions without a route show an empty state. Switching sessions never substitutes another session's route.
 - `trace` keeps a recent window (about 60 rows), not full history. For full history use `magpie usage --csv`.
 - `trace` reports `provider/model`; the final `served_model` (for example `hy4-free`) appears in `magpie usage --csv`.
 - Routing groups use session affinity and rules, so the "current real model" can change per turn.

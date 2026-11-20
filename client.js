@@ -22,7 +22,7 @@ window.__ModuleLoader__.load({
         label: 'magpie 真实路由',
         loading: '读取中…',
         unreachable: '网关不可用（点击重试）',
-        none: '暂无已完成的请求',
+        none: '当前会话暂无请求路由',
         inFlight: '进行中',
         inFlightPrefix: '另有 ',
         inFlightSuffix: ' 条进行中',
@@ -35,7 +35,7 @@ window.__ModuleLoader__.load({
         label: 'magpie real route',
         loading: 'loading…',
         unreachable: 'gateway unreachable (click to retry)',
-        none: 'no settled request yet',
+        none: 'no request route for this session yet',
         inFlight: 'in flight',
         inFlightPrefix: '',
         inFlightSuffix: ' in flight',
@@ -83,6 +83,7 @@ window.__ModuleLoader__.load({
 
     function MagpieRouteDock(props) {
       const ctx = props.ctx
+      const session = props.routeSessionId
       const [state, setState] = React.useState({ phase: 'loading' })
       const [nonce, setNonce] = React.useState(0)
       const [lang, setLang] = React.useState(() => currentLang(ctx))
@@ -104,7 +105,8 @@ window.__ModuleLoader__.load({
         let timer = null
         const run = async () => {
           try {
-            const response = await fetch(`${ROUTE}`, { headers: { accept: 'application/json' } })
+            const query = session ? `?session=${encodeURIComponent(session)}` : ''
+            const response = await fetch(`${ROUTE}${query}`, { headers: { accept: 'application/json' } })
             const body = await response.json()
             if (!alive) return
             if (!response.ok || body.error) {
@@ -112,7 +114,7 @@ window.__ModuleLoader__.load({
             } else {
               setState({
                 phase: 'ok',
-                kind: body.kind || 'trace',
+                kind: body.kind || 'session-empty',
                 route: (body.routes || [])[0] || null,
                 pending: body.pending || 0,
               })
@@ -127,7 +129,7 @@ window.__ModuleLoader__.load({
           alive = false
           if (timer) clearTimeout(timer)
         }
-      }, [nonce])
+      }, [nonce, session])
 
       const t = DICT[lang] || DICT.zh
       let dot = 'var(--dsw-alias-state-idle-primary)'
@@ -201,6 +203,7 @@ window.__ModuleLoader__.load({
           name: 'conversation.composer.dock',
           id: 'magpie-route-dock',
           order: 40,
+          inject: sessionId => ({ routeSessionId: sessionId }),
         }, props => h(MagpieRouteDock, { ...props, ctx })))
       },
     }
