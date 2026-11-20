@@ -9,12 +9,12 @@ A DeepSeek Harness (`dsh`) plugin that shows the **real upstream model** behind 
 DSH's model picker only knows the routing-group alias you configured (for example `magpie/group/daily`). The local magpie gateway decides which upstream provider/model actually serves each request, and that can change from turn to turn. This plugin reads the gateway's own route record and shows the real result.
 
 ```
-● magpie real route · 13:32 magpie/group/daily → workbuddy/glm-5.3
+● magpie real route · magpie/group/daily → workbuddy/glm-5.3
 ```
 
 ## Features
 
-- **Composer dock line** — sits below the composer, refreshes every 15 seconds, and refreshes immediately on click. Shows the time, the asked alias, the real `provider/model`, and the matched routing rule.
+- **Composer dock line** — sits below the composer, refreshes every 15 seconds, and refreshes immediately on click. Shows the asked alias, the real `provider/model`, and the matched routing rule.
 - **Per DSH session** — the Host half tags each magpie inference with `X-Magpie-Session`, so the gateway can report this session's current/last route; an in-flight request shows its already-picked target with a "进行中 / in flight" marker.
 - **Follows the DSH UI language** — the line reads `magpie real route` in English and `magpie 真实路由` in Chinese (and switches live when the UI language changes).
 - Green dot = a route; red dot = the gateway is unreachable (click to retry); grey dot = no route yet.

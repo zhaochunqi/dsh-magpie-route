@@ -9,12 +9,12 @@ DeepSeek Harness（`dsh`）插件：把 [magpie](https://usemagpie.ai) 路由组
 DSH 的模型选择器只知道你配置的路由组别名（例如 `magpie/group/daily`）；请求实际发往哪个上游 provider/model 由本地 magpie 网关决定，而且可能逐轮变化。本插件读取网关自己的路由记录，把真实结果显示出来。
 
 ```
-● magpie 真实路由 · 13:32 magpie/group/daily → workbuddy/glm-5.3
+● magpie 真实路由 · magpie/group/daily → workbuddy/glm-5.3
 ```
 
 ## 功能
 
-- **输入框下方常驻一行**：每 15 秒刷新，点击立即刷新；显示时间、请求别名、真实 `provider/model` 和命中的路由规则。
+- **输入框下方常驻一行**：每 15 秒刷新，点击立即刷新；显示请求别名、真实 `provider/model` 和命中的路由规则。
 - **避免跨会话误显示**：仅在获得当前 DSH session ID 时查询对应路由；不会回退显示其他会话的全局记录。
 - **跟随 DSH 界面语言**：中文界面显示“magpie 真实路由”，英文界面显示“magpie real route”，切换语言时会实时更新。
 - 绿点 = 有路由结果；红点 = 网关不可用（点击重试）；灰点 = 暂无路由；悬停显示数据源。
