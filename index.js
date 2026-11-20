@@ -104,11 +104,9 @@ function readFromConfigEditor(ctx) {
  * plugin reads the `llm-pi-ai` row's `providers.magpie.baseURL`. An explicit
  * `config.baseURL` still wins, and `http://127.0.0.1:3425` is the last resort.
  *
- * The Host half also tags every magpie inference with `X-Magpie-Session`, so
- * the gateway can answer `/v1/magpie/route?session=...` for *this* DSH session
- * (including an in-flight request's already-picked target). The trace endpoint
- * remains the fallback for the first paint and for profiles where no inference
- * has happened yet. The plugin adds no command and no agent tool.
+ * The Host half tags each magpie inference with `X-Magpie-Session`. The client
+ * must supply its session ID when reading the corresponding route; there is no
+ * global trace fallback, to avoid leaking another session's route.
  */
 export function apply(ctx, config = {}) {
   const raw = config && typeof config === 'object' ? config : {}
@@ -121,7 +119,6 @@ export function apply(ctx, config = {}) {
   }
 
   const connection = ctx.connection
-  let lastSession
   let eventBaseURL
   let storedBaseURL
 
@@ -141,7 +138,6 @@ export function apply(ctx, config = {}) {
       const gateway = gatewayOriginOf(request.baseURL)
       if (gateway !== undefined) eventBaseURL = gateway
       if (typeof request.sessionId === 'string' && request.sessionId.length > 0) {
-        lastSession = request.sessionId
         headers.set('x-magpie-session', request.sessionId)
       }
     }
@@ -168,15 +164,10 @@ export function apply(ctx, config = {}) {
       }
       const baseURL = currentBaseURL()
       try {
-        let result
-        if (lastSession) {
-          result = await collectRoutes({ ...settings, baseURL, session: lastSession, signal: request.signal })
-          if (result.kind === 'session-empty') {
-            result = await collectRoutes({ ...settings, baseURL, limit: 1, signal: request.signal })
-          }
-        } else {
-          result = await collectRoutes({ ...settings, baseURL, limit: 1, signal: request.signal })
-        }
+        const session = url.searchParams.get('session') || undefined
+        const result = session
+          ? await collectRoutes({ ...settings, baseURL, session, signal: request.signal })
+          : { kind: 'session-empty', session: '', routes: [] }
         return jsonResponse({ ...result, baseURL })
       } catch (error) {
         return jsonResponse({ error: describeError(error, baseURL), baseURL }, 502)

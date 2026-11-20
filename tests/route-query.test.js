@@ -7,6 +7,7 @@ import {
   formatRoutes,
   normalizeBaseURL,
 } from '../route-query.js'
+import { apply } from '../index.js'
 
 function response(body, status = 200) {
   return {
@@ -129,6 +130,55 @@ test('formatRoutes keeps the route label and pending count readable', () => {
   assert.match(text, /magpie 真实路由/)
   assert.match(text, /magpie\/group\/new → provider\/model\s+\[cheap-first\]/)
   assert.match(text, /另有 1 条进行中的请求/)
+})
+
+test('host route is session-scoped and never falls back to global trace', async t => {
+  const requests = []
+  t.mock.method(globalThis, 'fetch', async url => {
+    requests.push(String(url))
+    return response({
+      route: {
+        time: '2026-11-20T17:00:00.000Z',
+        asked: 'group/newapi-strong',
+        model: 'new-api/gpt-6-astra',
+        done: true,
+      },
+    })
+  })
+
+  let registered
+  const ctx = {
+    connection: { requestRejection: () => undefined },
+    webServer: { register(route) { registered = route } },
+    effect(effect) { effect() },
+    on() {},
+    get() { return undefined },
+  }
+  apply(ctx, { baseURL: 'https://gateway.example' })
+
+  const requestFor = session => new Request(
+    `http://dsh.test/plugins/magpie-route/route${session ? `?session=${encodeURIComponent(session)}` : ''}`,
+  )
+  const current = await registered.resource(requestFor('current-session'))
+  const currentBody = await current.json()
+  assert.equal(currentBody.session, 'current-session')
+  assert.equal(currentBody.routes[0].real, 'new-api/gpt-6-astra')
+  assert.deepEqual(requests, [
+    'https://gateway.example/v1/magpie/route?session=current-session',
+  ])
+
+  const second = await registered.resource(requestFor('other-session'))
+  assert.equal((await second.json()).session, 'other-session')
+  const firstAgain = await registered.resource(requestFor('current-session'))
+  assert.equal((await firstAgain.json()).session, 'current-session')
+  assert.deepEqual(requests.slice(1), [
+    'https://gateway.example/v1/magpie/route?session=other-session',
+    'https://gateway.example/v1/magpie/route?session=current-session',
+  ])
+
+  const missing = await registered.resource(requestFor(''))
+  assert.equal((await missing.json()).kind, 'session-empty')
+  assert.equal(requests.length, 3, 'missing session must not query the global trace')
 })
 
 test('describeError includes the active gateway address', () => {
