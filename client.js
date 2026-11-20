@@ -71,12 +71,6 @@ window.__ModuleLoader__.load({
       whiteSpace: 'nowrap',
     }
 
-    function timeOf(value) {
-      const text = typeof value === 'string' ? value : ''
-      if (/^\d{2}:\d{2}/u.test(text)) return text.slice(0, 5)
-      return text.length >= 19 ? text.slice(11, 16) : ''
-    }
-
     function currentLang(ctx) {
       try {
         const snapshot = ctx.locale.getLocale()
@@ -156,7 +150,7 @@ window.__ModuleLoader__.load({
               ? ` · ${t.inFlight}`
               : ` · ${t.inFlightPrefix}${state.pending}${t.inFlightSuffix}`)
             : ''
-          text = `${t.label} · ${timeOf(route.time)} ${asked}${route.real}${rule}${pending}`
+          text = `${t.label} · ${asked}${route.real}${rule}${pending}`
           title = `${t.sourcePrefix}${ROUTE}${t.sourceSuffix}`
         }
       }
