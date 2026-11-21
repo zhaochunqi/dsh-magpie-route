@@ -2,7 +2,12 @@
  * Client dock: one ambient line below the composer that shows the real upstream
  * model behind the configured magpie routing group. It polls the package's
  * Host half over a same-origin route (the gateway itself sends no CORS headers).
- * Clicking the line refreshes immediately; the row also refreshes every 15s.
+ * Clicking the line refreshes immediately.
+ *
+ * The refresh is event-driven: an idle query is held open by the Host until the
+ * next magpie request starts, and while a request is being routed the line polls
+ * once a second, so a new route shows up within about a second instead of on the
+ * next fixed tick.
  *
  * The label follows the DSH UI language (Chinese / English). Only the `react`
  * module is required; all styling is inline so the factory does not depend on
@@ -14,7 +19,10 @@ window.__ModuleLoader__.load({
     const React = require('react')
     const h = React.createElement
     const ROUTE = '/plugins/magpie-route/route'
-    const REFRESH_MS = 15000
+    const FAST_MS = 1000
+    const GRACE_MS = 5000
+    const RETRY_MS = 5000
+    const IDLE_MIN_MS = 1000
     const NS = 'magpieRoute'
 
     const DICT = {
@@ -103,31 +111,62 @@ window.__ModuleLoader__.load({
       React.useEffect(() => {
         let alive = true
         let timer = null
+        let controller = null
+        let since = 0
+        let fastUntil = 0
+
+        const schedule = delay => {
+          if (alive) timer = setTimeout(run, delay)
+        }
+
         const run = async () => {
+          const fast = Date.now() < fastUntil
+          const query = []
+          if (session) query.push(`session=${encodeURIComponent(session)}`)
+          if (since > 0) query.push(`since=${since}`)
+          // An idle query is held open by the Host until the next request starts.
+          if (!fast) query.push('wait=1')
+          const started = Date.now()
+          controller = typeof AbortController === 'function' ? new AbortController() : null
           try {
-            const query = session ? `?session=${encodeURIComponent(session)}` : ''
-            const response = await fetch(`${ROUTE}${query}`, { headers: { accept: 'application/json' } })
+            const response = await fetch(query.length === 0 ? ROUTE : `${ROUTE}?${query.join('&')}`, {
+              headers: { accept: 'application/json' },
+              ...(controller === null ? {} : { signal: controller.signal }),
+            })
             const body = await response.json()
             if (!alive) return
-            if (!response.ok || body.error) {
-              setState({ phase: 'error', message: body.error || 'magpie gateway unavailable' })
-            } else {
-              setState({
-                phase: 'ok',
-                kind: body.kind || 'session-empty',
-                route: (body.routes || [])[0] || null,
-                pending: body.pending || 0,
-              })
+            const observed = Number(body && body.lastRequestAt)
+            if (Number.isFinite(observed) && observed > since) {
+              since = observed
+              fastUntil = Date.now() + GRACE_MS
             }
+            if (body && body.pending > 0) fastUntil = Date.now() + GRACE_MS
+            if (!response.ok || body.error) {
+              fastUntil = 0
+              setState({ phase: 'error', message: body.error || 'magpie gateway unavailable' })
+              schedule(RETRY_MS)
+              return
+            }
+            setState({
+              phase: 'ok',
+              kind: body.kind || 'session-empty',
+              route: (body.routes || [])[0] || null,
+              pending: body.pending || 0,
+            })
+            const held = Date.now() - started > 250
+            schedule(Date.now() < fastUntil ? FAST_MS : (held && since > 0 ? 0 : IDLE_MIN_MS))
           } catch (error) {
-            if (alive) setState({ phase: 'error', message: String((error && error.message) || error) })
+            if (!alive) return
+            fastUntil = 0
+            setState({ phase: 'error', message: String((error && error.message) || error) })
+            schedule(RETRY_MS)
           }
-          if (alive) timer = setTimeout(run, REFRESH_MS)
         }
         void run()
         return () => {
           alive = false
           if (timer) clearTimeout(timer)
+          if (controller) controller.abort()
         }
       }, [nonce, session])
 

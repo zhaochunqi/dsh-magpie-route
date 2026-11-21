@@ -13,6 +13,14 @@ const DEFAULT_AGENT = 'dsh'
 /** Same-origin endpoint for the composer dock; browsers cannot call the gateway directly (no CORS). */
 const CLIENT_ROUTE = '/plugins/magpie-route/route'
 
+/**
+ * How long an idle dock query is held open waiting for the next magpie request.
+ * The dock sends an already-seen `since` and the Host answers the moment a
+ * request starts, so the line updates within a second instead of on the next
+ * fixed poll tick. Bounded well below any browser or proxy idle timeout.
+ */
+const IDLE_HOLD_MS = 8000
+
 function jsonResponse(value, status = 200) {
   return new Response(JSON.stringify(value), {
     status,
@@ -107,6 +115,11 @@ function readFromConfigEditor(ctx) {
  * The Host half tags each magpie inference with `X-Magpie-Session`. The client
  * must supply its session ID when reading the corresponding route; there is no
  * global trace fallback, to avoid leaking another session's route.
+ *
+ * Refresh is event-driven rather than on a fixed tick: a query that is caught
+ * up (`since` equals the last request this Host saw) is held open until the
+ * next request starts, and the client asks again every second while a request
+ * is being routed. `lastRequestAt` lets the client tell those two modes apart.
  */
 export function apply(ctx, config = {}) {
   const raw = config && typeof config === 'object' ? config : {}
@@ -121,6 +134,37 @@ export function apply(ctx, config = {}) {
   const connection = ctx.connection
   let eventBaseURL
   let storedBaseURL
+
+  /** Wall clock of the last magpie inference DSH started, or 0 before the first one. */
+  let lastRequestAt = 0
+  /** Idle dock queries parked on `wait=1`, woken as soon as a request starts. */
+  const requestWaiters = new Set()
+
+  function noteRequestStart() {
+    // Strictly increasing, so a second request inside the same millisecond still
+    // counts as newer than the value the dock already saw.
+    lastRequestAt = Math.max(Date.now(), lastRequestAt + 1)
+    const waiters = [...requestWaiters]
+    requestWaiters.clear()
+    for (const wake of waiters) wake()
+  }
+
+  /** Resolve on the next magpie request start, on `timeoutMs`, or when the client goes away. */
+  function waitForRequestStart(signal, timeoutMs) {
+    if (signal?.aborted === true) return Promise.resolve()
+    return new Promise(resolve => {
+      let timer
+      const done = () => {
+        clearTimeout(timer)
+        requestWaiters.delete(done)
+        signal?.removeEventListener('abort', done)
+        resolve()
+      }
+      timer = setTimeout(done, timeoutMs)
+      requestWaiters.add(done)
+      signal?.addEventListener('abort', done, { once: true })
+    })
+  }
 
   /** First-paint lookup from DSH config; cached once a value is found. */
   const profileBaseURL = () => {
@@ -140,6 +184,7 @@ export function apply(ctx, config = {}) {
       if (typeof request.sessionId === 'string' && request.sessionId.length > 0) {
         headers.set('x-magpie-session', request.sessionId)
       }
+      noteRequestStart()
     }
     return next()
   }))
@@ -165,12 +210,19 @@ export function apply(ctx, config = {}) {
       const baseURL = currentBaseURL()
       try {
         const session = url.searchParams.get('session') || undefined
+        const since = Number(url.searchParams.get('since'))
+        // Idle dock: the client is caught up with `lastRequestAt`, so hold the
+        // response open until a new magpie request starts (bounded by IDLE_HOLD_MS).
+        const caughtUp = Number.isFinite(since) && since > 0 && since >= lastRequestAt
+        if (caughtUp && url.searchParams.get('wait') === '1') {
+          await waitForRequestStart(request.signal, IDLE_HOLD_MS)
+        }
         const result = session
           ? await collectRoutes({ ...settings, baseURL, session, signal: request.signal })
           : { kind: 'session-empty', session: '', routes: [] }
-        return jsonResponse({ ...result, baseURL })
+        return jsonResponse({ ...result, baseURL, lastRequestAt })
       } catch (error) {
-        return jsonResponse({ error: describeError(error, baseURL), baseURL }, 502)
+        return jsonResponse({ error: describeError(error, baseURL), baseURL, lastRequestAt }, 502)
       }
     },
   }))

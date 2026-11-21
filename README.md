@@ -14,7 +14,7 @@ DSH's model picker only knows the routing-group alias you configured (for exampl
 
 ## Features
 
-- **Composer dock line** — sits below the composer, refreshes every 15 seconds, and refreshes immediately on click. Shows the asked alias, the real `provider/model`, and the matched routing rule.
+- **Composer dock line** — sits below the composer and refreshes immediately on click. It is event-driven, not on a fixed timer: an idle query is held by the Host until the next magpie request starts, and while a request is being routed the line polls once a second, so a new route appears within about a second. Shows the asked alias, the real `provider/model`, and the matched routing rule.
 - **Per DSH session** — the Host half tags each magpie inference with `X-Magpie-Session`, so the gateway can report this session's current/last route; an in-flight request shows its already-picked target with a "进行中 / in flight" marker.
 - **Follows the DSH UI language** — the line reads `magpie real route` in English and `magpie 真实路由` in Chinese (and switches live when the UI language changes).
 - Green dot = a route; red dot = the gateway is unreachable (click to retry); grey dot = no route yet.
