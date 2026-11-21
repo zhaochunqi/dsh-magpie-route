@@ -210,10 +210,12 @@ export function apply(ctx, config = {}) {
       const baseURL = currentBaseURL()
       try {
         const session = url.searchParams.get('session') || undefined
-        const since = Number(url.searchParams.get('since'))
-        // Idle dock: the client is caught up with `lastRequestAt`, so hold the
-        // response open until a new magpie request starts (bounded by IDLE_HOLD_MS).
-        const caughtUp = Number.isFinite(since) && since > 0 && since >= lastRequestAt
+        const rawSince = url.searchParams.get('since')
+        const since = rawSince === null ? undefined : Number(rawSince)
+        // Idle dock: the client is caught up with `lastRequestAt` (0 included, so
+        // a session with no traffic yet parks too), so hold the response open
+        // until a new magpie request starts (bounded by IDLE_HOLD_MS).
+        const caughtUp = Number.isFinite(since) && since >= lastRequestAt
         if (caughtUp && url.searchParams.get('wait') === '1') {
           await waitForRequestStart(request.signal, IDLE_HOLD_MS)
         }

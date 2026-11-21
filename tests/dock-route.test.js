@@ -95,6 +95,19 @@ test('a caught-up query is held until the next request starts', async t => {
   assert.ok(body.lastRequestAt >= first.lastRequestAt)
 })
 
+test('a session with no traffic yet parks until the first request', async t => {
+  stubGateway(t)
+  const api = host()
+
+  const held = api.get('?session=session-A&since=0&wait=1')
+  assert.equal(await settled(held), 'waiting', 'no request has happened yet, so nothing to draw')
+
+  api.startRequest()
+  assert.equal(await settled(held), 'settled')
+  const body = await (await held).json()
+  assert.ok(body.lastRequestAt > 0)
+})
+
 test('a query behind the last request answers without waiting', async t => {
   stubGateway(t)
   const api = host()

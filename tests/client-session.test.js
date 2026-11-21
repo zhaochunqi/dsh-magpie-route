@@ -71,8 +71,8 @@ test('dock polls only the session bound by its scoped registration', async t => 
   await renderScopedDock('session-A')
   await renderScopedDock('session-B')
   assert.deepEqual(requests, [
-    '/plugins/magpie-route/route?session=session-A&wait=1',
-    '/plugins/magpie-route/route?session=session-B&wait=1',
+    '/plugins/magpie-route/route?session=session-A',
+    '/plugins/magpie-route/route?session=session-B',
   ])
 })
 
@@ -102,17 +102,16 @@ test('a new route shortens the next poll to one second', async t => {
   dock.type(dock.props)
   await flush()
 
-  // First paint asks immediately without holding, then settles on a short retry.
-  assert.equal(requests[0], '/plugins/magpie-route/route?session=session-A&wait=1')
+  // The first paint answers at once; the next query parks on the Host.
+  assert.equal(requests[0], '/plugins/magpie-route/route?session=session-A')
   assert.equal(timers.at(-1).delay, 1000)
 
-  // The Host reports a request the dock has not seen: poll fast from now on.
   timers.shift().fn()
   await flush()
-  assert.equal(requests[1], '/plugins/magpie-route/route?session=session-A&wait=1')
-  assert.equal(timers.at(-1).delay, 1000)
+  assert.equal(requests[1], '/plugins/magpie-route/route?session=session-A&since=0&wait=1')
 
-  // A route still being routed keeps the fast loop going, without holding.
+  // The Host reports a request the dock has not seen: poll fast from now on.
+  assert.equal(timers.at(-1).delay, 1000)
   timers.shift().fn()
   await flush()
   assert.equal(requests[2], '/plugins/magpie-route/route?session=session-A&since=111')

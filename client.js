@@ -21,6 +21,7 @@ window.__ModuleLoader__.load({
     const ROUTE = '/plugins/magpie-route/route'
     const FAST_MS = 1000
     const GRACE_MS = 5000
+    const FAST_WINDOW_MS = 300000
     const RETRY_MS = 5000
     const IDLE_MIN_MS = 1000
     const NS = 'magpieRoute'
@@ -113,7 +114,16 @@ window.__ModuleLoader__.load({
         let timer = null
         let controller = null
         let since = 0
+        let painted = false
         let fastUntil = 0
+        let fastSince = 0
+
+        /** Poll fast for a while: a route is being resolved or just appeared. */
+        const active = () => {
+          const now = Date.now()
+          if (fastSince === 0) fastSince = now
+          if (now - fastSince < FAST_WINDOW_MS) fastUntil = now + GRACE_MS
+        }
 
         const schedule = delay => {
           if (alive) timer = setTimeout(run, delay)
@@ -121,11 +131,16 @@ window.__ModuleLoader__.load({
 
         const run = async () => {
           const fast = Date.now() < fastUntil
+          if (!fast) fastSince = 0
+          // Only a drawn dock parks a query; the first paint answers at once.
+          const hold = !fast && painted
           const query = []
           if (session) query.push(`session=${encodeURIComponent(session)}`)
-          if (since > 0) query.push(`since=${since}`)
-          // An idle query is held open by the Host until the next request starts.
-          if (!fast) query.push('wait=1')
+          if (hold) {
+            query.push(`since=${since}`, 'wait=1')
+          } else if (since > 0) {
+            query.push(`since=${since}`)
+          }
           const started = Date.now()
           controller = typeof AbortController === 'function' ? new AbortController() : null
           try {
@@ -135,12 +150,13 @@ window.__ModuleLoader__.load({
             })
             const body = await response.json()
             if (!alive) return
+            painted = true
             const observed = Number(body && body.lastRequestAt)
             if (Number.isFinite(observed) && observed > since) {
               since = observed
-              fastUntil = Date.now() + GRACE_MS
+              active()
             }
-            if (body && body.pending > 0) fastUntil = Date.now() + GRACE_MS
+            if (body && body.pending > 0) active()
             if (!response.ok || body.error) {
               fastUntil = 0
               setState({ phase: 'error', message: body.error || 'magpie gateway unavailable' })
@@ -153,8 +169,9 @@ window.__ModuleLoader__.load({
               route: (body.routes || [])[0] || null,
               pending: body.pending || 0,
             })
+            // A held answer means a request just started: go again at once.
             const held = Date.now() - started > 250
-            schedule(Date.now() < fastUntil ? FAST_MS : (held && since > 0 ? 0 : IDLE_MIN_MS))
+            schedule(Date.now() < fastUntil ? FAST_MS : (held ? 0 : IDLE_MIN_MS))
           } catch (error) {
             if (!alive) return
             fastUntil = 0
