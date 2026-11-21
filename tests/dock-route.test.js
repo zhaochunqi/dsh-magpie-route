@@ -58,9 +58,9 @@ function stubGateway(t) {
   }))
 }
 
-const settled = promise => Promise.race([
+const settled = (promise, timeoutMs = 300) => Promise.race([
   promise.then(() => 'settled'),
-  new Promise(resolve => setTimeout(() => resolve('waiting'), 60)),
+  new Promise(resolve => setTimeout(() => resolve('waiting'), timeoutMs)),
 ])
 
 test('reports the last request start and tags the inference with the session', async t => {
@@ -89,8 +89,12 @@ test('a caught-up query is held until the next request starts', async t => {
   const held = api.get(`?session=session-A&since=${first.lastRequestAt}&wait=1`)
   assert.equal(await settled(held), 'waiting', 'park an idle query instead of answering at once')
 
+  const firedAt = Date.now()
   api.startRequest()
   assert.equal(await settled(held), 'settled', 'wake as soon as a request starts')
+  const wakeMs = Date.now() - firedAt
+  // A short settle lets the gateway record the request before the first read.
+  assert.ok(wakeMs >= 150 && wakeMs < 500, `wake should settle quickly, took ${wakeMs}ms`)
   const body = await (await held).json()
   assert.ok(body.lastRequestAt >= first.lastRequestAt)
 })

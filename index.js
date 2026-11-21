@@ -21,6 +21,16 @@ const CLIENT_ROUTE = '/plugins/magpie-route/route'
  */
 const IDLE_HOLD_MS = 8000
 
+/**
+ * Slack after a wake before the gateway is read.
+ *
+ * DSH reports the request through the header hook just before magpie receives
+ * it, so the record lands a few milliseconds later. Reading at once would show
+ * the previous request and wait for the client's one-second tick; this settles
+ * the first read on the request that caused the wake.
+ */
+const WAKE_SETTLE_MS = 180
+
 function jsonResponse(value, status = 200) {
   return new Response(JSON.stringify(value), {
     status,
@@ -166,6 +176,20 @@ export function apply(ctx, config = {}) {
     })
   }
 
+  /** Resolve after `ms`, or when the client goes away. */
+  function delay(ms, signal) {
+    if (signal?.aborted === true) return Promise.resolve()
+    return new Promise(resolve => {
+      const done = () => {
+        clearTimeout(timer)
+        signal?.removeEventListener('abort', done)
+        resolve()
+      }
+      const timer = setTimeout(done, ms)
+      signal?.addEventListener('abort', done, { once: true })
+    })
+  }
+
   /** First-paint lookup from DSH config; cached once a value is found. */
   const profileBaseURL = () => {
     if (storedBaseURL !== undefined) return storedBaseURL
@@ -217,7 +241,11 @@ export function apply(ctx, config = {}) {
         // until a new magpie request starts (bounded by IDLE_HOLD_MS).
         const caughtUp = Number.isFinite(since) && since >= lastRequestAt
         if (caughtUp && url.searchParams.get('wait') === '1') {
+          const before = lastRequestAt
           await waitForRequestStart(request.signal, IDLE_HOLD_MS)
+          // Woken by a request rather than by the hold expiring: let the gateway
+          // record it first, so this read already names the new route.
+          if (lastRequestAt > before) await delay(WAKE_SETTLE_MS, request.signal)
         }
         const result = session
           ? await collectRoutes({ ...settings, baseURL, session, signal: request.signal })
