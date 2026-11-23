@@ -148,21 +148,33 @@ window.__ModuleLoader__.load({
               headers: { accept: 'application/json' },
               ...(controller === null ? {} : { signal: controller.signal }),
             })
-            const body = await response.json()
+            // A refused or failed read can answer with a body that is empty or
+            // not JSON (the web server sends a bare 400/401/403/503). Treat that
+            // as a readable HTTP failure instead of an opaque SyntaxError, and
+            // keep polling so the line recovers by itself.
+            let body = null
+            try {
+              body = await response.json()
+            } catch {
+              body = null
+            }
             if (!alive) return
             painted = true
-            const observed = Number(body && body.lastRequestAt)
+            if (!response.ok || body === null || body.error) {
+              fastUntil = 0
+              setState({
+                phase: 'error',
+                message: (body && body.error) || `HTTP ${response.status} from ${ROUTE}`,
+              })
+              schedule(RETRY_MS)
+              return
+            }
+            const observed = Number(body.lastRequestAt)
             if (Number.isFinite(observed) && observed > since) {
               since = observed
               active()
             }
-            if (body && body.pending > 0) active()
-            if (!response.ok || body.error) {
-              fastUntil = 0
-              setState({ phase: 'error', message: body.error || 'magpie gateway unavailable' })
-              schedule(RETRY_MS)
-              return
-            }
+            if (body.pending > 0) active()
             setState({
               phase: 'ok',
               kind: body.kind || 'session-empty',

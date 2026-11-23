@@ -9,8 +9,9 @@ const ROUTE_URL = 'http://127.0.0.1:52404/plugins/magpie-route/route'
 function host() {
   const hooks = []
   let handler
+  // Deliberately no `connection` member: 0.2.3 removed
+  // `connection.requestRejection`, and the Host half must not call it.
   const ctx = {
-    connection: { requestRejection: () => undefined },
     effect(fn) {
       return fn()
     },
@@ -62,6 +63,13 @@ const settled = (promise, timeoutMs = 300) => Promise.race([
   promise.then(() => 'settled'),
   new Promise(resolve => setTimeout(() => resolve('waiting'), timeoutMs)),
 ])
+
+test('serves the dock route without any Connection API', async t => {
+  stubGateway(t)
+  const api = host()
+  const response = await api.get('?session=session-A')
+  assert.equal(response.status, 200, 'a missing connection service must not break the route')
+})
 
 test('reports the last request start and tags the inference with the session', async t => {
   stubGateway(t)

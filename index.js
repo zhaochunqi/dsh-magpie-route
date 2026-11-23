@@ -4,7 +4,7 @@ import { collectRoutes, describeError } from './route-query.js'
 export const name = 'magpie-route'
 
 /** Only the same-origin route remains: the plugin has no command and no agent tool. */
-export const inject = ['webServer', 'connection']
+export const inject = ['webServer']
 
 /** Last resort only. The real endpoint comes from the DSH profile's magpie provider. */
 const FALLBACK_BASE_URL = 'http://127.0.0.1:3425'
@@ -141,7 +141,6 @@ export function apply(ctx, config = {}) {
     limit: raw.limit,
   }
 
-  const connection = ctx.connection
   let eventBaseURL
   let storedBaseURL
 
@@ -216,16 +215,12 @@ export function apply(ctx, config = {}) {
   ctx.effect(() => ctx.webServer.register({
     kind: 'exact',
     path: CLIENT_ROUTE,
+    // The web server admits this route as `required` before dispatching it
+    // (405 for non-GET/HEAD, 401/403/503 for refused credentials), so the
+    // resource only reads the URL. It must not call a Connection method here:
+    // 0.2.3 dropped `connection.requestRejection`, and the resulting TypeError
+    // surfaced as an empty 400 that left the dock stuck on "gateway unreachable".
     resource: async (request) => {
-      const rejection = connection.requestRejection(request)
-      if (rejection !== undefined) return new Response(null, { status: rejection })
-      if (request.method !== 'GET') {
-        return new Response(null, {
-          status: 405,
-          headers: { allow: 'GET' },
-        })
-      }
-
       const url = new URL(request.url)
       const origin = request.headers.get('origin')
       if (origin !== null && origin !== url.origin) {

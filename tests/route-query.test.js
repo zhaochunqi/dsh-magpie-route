@@ -148,7 +148,6 @@ test('host route is session-scoped and never falls back to global trace', async 
 
   let registered
   const ctx = {
-    connection: { requestRejection: () => undefined },
     webServer: { register(route) { registered = route } },
     effect(effect) { effect() },
     on() {},

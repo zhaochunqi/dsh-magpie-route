@@ -119,3 +119,41 @@ test('a new route shortens the next poll to one second', async t => {
 
   cleanups.forEach(cleanup => cleanup())
 })
+
+test('an unreadable error body keeps the retry loop alive', async t => {
+  const requests = []
+  t.mock.method(globalThis, 'fetch', async url => {
+    requests.push(String(url))
+    return {
+      ok: false,
+      status: 400,
+      // The web server answers refusals with an empty body, so `json()`
+      // throws the opaque "Unexpected end of JSON input".
+      async json() {
+        throw new SyntaxError('Unexpected end of JSON input')
+      },
+    }
+  })
+  const timers = []
+  const cleanups = []
+  const { options, component } = await registration(renderlessReact(cleanups), {
+    setTimeout(fn, delay) {
+      timers.push({ fn, delay })
+      return timers.length
+    },
+    clearTimeout() {},
+  })
+
+  const dock = component(options.inject('session-A'))
+  assert.doesNotThrow(() => dock.type(dock.props))
+  await flush()
+
+  assert.equal(requests.length, 1)
+  assert.equal(timers.at(-1).delay, 5000, 'retry instead of stopping on an unparseable body')
+
+  timers.shift().fn()
+  await flush()
+  assert.equal(requests.length, 2, 'the loop keeps polling until the gateway answers')
+
+  cleanups.forEach(cleanup => cleanup())
+})

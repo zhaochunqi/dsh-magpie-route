@@ -41,7 +41,7 @@ No configuration is required. The Host half discovers the gateway from DSH itsel
 - The Host half derives the gateway root from the `baseURL` that DSH reports for each magpie inference through the `llm-pi-ai/request-headers` waterfall (no config-file parsing), contributes `X-Magpie-Session: <dsh session id>` (a header only; no request-body, model, or tool change), then reads `GET {baseURL}/v1/magpie/route?session=<dsh session id>` for this session's current/last route.
 - Before the first inference it reads `llm-pi-ai`'s configured `providers.magpie.baseURL` from the live Loader config (falling back to `http://127.0.0.1:3425`), so the first paint already uses the right port.
 - The Dock binds its session through the registration's `inject(sessionId)` callback. It never falls back to global `/v1/magpie/trace` records.
-- The client half polls `/plugins/magpie-route/route?session=<current session id>` because the gateway sends no CORS headers. The route checks DSH's `connection.requestRejection` and rejects a mismatched `Origin` header.
+- The client half polls `/plugins/magpie-route/route?session=<current session id>` because the gateway sends no CORS headers. The web server admits the route as a `required` route before dispatch (DSH's Connection supplies the credential and Host/Origin checks), and the resource rejects a mismatched `Origin` header itself.
 
 ## Limitations
 
